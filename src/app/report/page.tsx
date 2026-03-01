@@ -1,12 +1,11 @@
-"use client";
-export const dynamic = "force-dynamic";
-import { useSearchParams } from "next/navigation";
+interface ReportPageProps {
+  searchParams: { [key: string]: string | string[] | undefined };
+}
 
-export default function ReportPage() {
-  const searchParams = useSearchParams();
-  const data = searchParams.get("result");
+export default function ReportPage({ searchParams }: ReportPageProps) {
+  const data = searchParams?.result || searchParams?.data;
 
-  if (!data) {
+  if (!data || typeof data !== "string") {
     return <div className="p-8">No report data found.</div>;
   }
 
@@ -24,7 +23,6 @@ export default function ReportPage() {
         Internship Resume Benchmark Report
       </h1>
 
-      {/* Match Level */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold">Match Level</h2>
         <p className={`text-2xl font-bold ${getColor()}`}>
@@ -32,71 +30,56 @@ export default function ReportPage() {
         </p>
       </div>
 
- {/* Likely Screening Blockers */}
-<div className="mb-6">
-  <h2 className="text-xl font-semibold mb-2">
-    Likely Screening Blockers
-  </h2>
-
-  {report.likely_rejection_factors.length === 0 ? (
-    <p className="text-green-600">
-      No major screening blockers detected. Resume shows strong shortlisting signals.
-    </p>
-  ) : (
-    <ul className="list-disc pl-6 text-red-700">
-      {report.likely_rejection_factors.map((item: string, i: number) => (
-        <li key={i}>{item}</li>
-      ))}
-    </ul>
-  )}
-</div>  
-
-      {/* Strengths */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">Strengths</h2>
-        <ul className="list-disc pl-6 text-green-700">
-          {report.strengths.map((item: string, i: number) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
+        <h2 className="text-xl font-semibold mb-2">
+          Likely Screening Blockers
+        </h2>
+
+        {report.likely_rejection_factors.length === 0 ? (
+          <p className="text-green-600">
+            No major screening blockers detected.
+          </p>
+        ) : (
+          <ul className="list-disc pl-6 text-red-700">
+            {report.likely_rejection_factors.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {/* Gaps */}
-<div className="mb-6">
-  <h2 className="text-xl font-semibold mb-2">Gaps</h2>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">Gaps</h2>
 
-  {report.gaps.length === 0 ? (
-    <p className="text-green-600">
-      No significant gaps identified compared to internship benchmark patterns.
-    </p>
-  ) : (
-    <ul className="list-disc pl-6 text-red-700">
-      {report.gaps.map((item: string, i: number) => (
-        <li key={i}>{item}</li>
-      ))}
-    </ul>
-  )}
-</div>
+        {report.gaps.length === 0 ? (
+          <p className="text-green-600">
+            No significant gaps identified.
+          </p>
+        ) : (
+          <ul className="list-disc pl-6 text-red-700">
+            {report.gaps.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-{/* Action Plan */}
-<div className="mb-6">
-  <h2 className="text-xl font-semibold mb-2">Action Plan</h2>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">Action Plan</h2>
 
-  {report.improvements.length === 0 ? (
-    <p className="text-green-600">
-      Your resume already aligns well with common internship shortlisting patterns. 
-      Focus on tailoring it per company and role.
-    </p>
-  ) : (
-    <ul className="list-disc pl-6">
-      {report.improvements.map((item: string, i: number) => (
-        <li key={i}>{item}</li>
-      ))}
-    </ul>
-  )}
-</div>
+        {report.improvements.length === 0 ? (
+          <p className="text-green-600">
+            Resume aligns well with benchmark patterns.
+          </p>
+        ) : (
+          <ul className="list-disc pl-6">
+            {report.improvements.map((item: string, i: number) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-      {/* Improved Bullet */}
       <div className="mb-8 p-4 bg-white border rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-2">
           Example Resume Upgrade
@@ -104,7 +87,6 @@ export default function ReportPage() {
         <p>{report.improved_bullet_example}</p>
       </div>
 
-      {/* Credibility Statement */}
       <p className="text-sm text-gray-500 mt-10">
         Based on common internship screening patterns observed across SWE internship resumes.
       </p>
