@@ -1,5 +1,5 @@
 "use client";
-
+export const dynamic = "force-dynamic";
 import { useSearchParams } from "next/navigation";
 
 export default function ReportPage() {
@@ -49,7 +49,7 @@ export default function ReportPage() {
       ))}
     </ul>
   )}
-</div>
+</div>  
 
       {/* Strengths */}
       <div className="mb-6">
