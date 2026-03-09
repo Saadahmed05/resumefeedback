@@ -2,89 +2,88 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import * as pdfjsLib from "pdfjs-dist";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 export default function AnalyzePage() {
   const router = useRouter();
 
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    setFile(e.target.files[0]);
+  const extractText = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let text = "";
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+
+      const pageText = content.items
+        .map((item: any) => item.str)
+        .join(" ");
+
+      text += pageText + " ";
+    }
+
+    return text;
   };
 
   const analyzeResume = async () => {
-    if (!file) {
-      setError("Please upload a resume.");
-      return;
-    }
+    if (!file) return;
 
     setLoading(true);
-    setError("");
 
-    try {
-      const formData = new FormData();
-      formData.append("resume", file);
+    const text = await extractText(file);
 
-      // Parse resume
-      const parseResponse = await fetch("/api/parse", {
-        method: "POST",
-        body: formData,
-      });
+    const response = await fetch("/api/parse", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text })
+    });
 
-      const parsed = await parseResponse.json();
+    const parsed = await response.json();
 
-      // Compare resume
-      const compareResponse = await fetch("/api/compare", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(parsed),
-      });
+    const compare = await fetch("/api/compare", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(parsed)
+    });
 
-      const report = await compareResponse.json();
+    const result = await compare.json();
 
-      // IMPORTANT: send result to report page
-      const encoded = encodeURIComponent(JSON.stringify(report));
+    const encoded = encodeURIComponent(JSON.stringify(result));
 
-      router.push(`/report?result=${encoded}`);
+    router.push(`/report?result=${encoded}`);
 
-    } catch (err) {
-      setError("Analysis failed.");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
-
-      <h1 className="text-3xl font-bold mb-6">
-        Analyze Your SWE Internship Resume
-      </h1>
+    <div className="p-10">
+      <h1 className="text-3xl font-bold mb-6">Upload Resume</h1>
 
       <input
         type="file"
         accept=".pdf"
-        onChange={handleFileChange}
-        className="mb-4"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
       />
 
       <button
         onClick={analyzeResume}
-        disabled={loading}
-        className="bg-blue-600 text-white px-6 py-3 rounded-lg"
+        className="mt-4 bg-black text-white px-4 py-2 rounded"
       >
         {loading ? "Analyzing..." : "Analyze Resume"}
       </button>
-
-      {error && (
-        <p className="text-red-600 mt-4">{error}</p>
-      )}
-
     </div>
   );
 }
