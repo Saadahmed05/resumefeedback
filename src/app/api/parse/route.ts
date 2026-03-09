@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import * as pdfParse from "pdf-parse";
 
@@ -7,43 +9,32 @@ export async function POST(req: Request) {
     const file = formData.get("resume") as File;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "No file uploaded" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Extract text from PDF
     const data = await (pdfParse as any)(buffer);
     const text = data.text.toLowerCase();
 
-    // Internship detection
     const internships =
       text.includes("intern") ||
       text.includes("internship") ||
       text.includes("trainee");
 
-    // GitHub detection
     const github_present =
       text.includes("github");
 
-    // Production project detection
     const production_projects =
       text.includes("deploy") ||
       text.includes("production") ||
       text.includes("live");
 
-    // Metrics detection
     const metrics_present =
       text.includes("%") ||
       text.includes("improved") ||
       text.includes("reduced");
 
-    // Tech stack detection
     const tech_stack: string[] = [];
 
     if (text.includes("react")) tech_stack.push("React");
@@ -53,7 +44,6 @@ export async function POST(req: Request) {
     if (text.includes("docker")) tech_stack.push("Docker");
     if (text.includes("java")) tech_stack.push("Java");
 
-    // Project complexity
     const project_complexity =
       text.includes("api") ||
       text.includes("pipeline") ||
@@ -71,13 +61,11 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error(error);
+
+    console.error("Parse error:", error);
 
     return NextResponse.json(
-      {
-        error: "Failed to parse resume",
-        details: String(error)
-      },
+      { error: "Failed to parse resume", details: String(error) },
       { status: 500 }
     );
   }
