@@ -1,41 +1,63 @@
 import { NextResponse } from "next/server";
+import * as pdfParse from "pdf-parse";
 
 export async function POST(req: Request) {
   try {
-
     const formData = await req.formData();
     const file = formData.get("resume") as File;
 
-    const text = await file.text();
-    const lower = text.toLowerCase();
+    if (!file) {
+      return NextResponse.json(
+        { error: "No file uploaded" },
+        { status: 400 }
+      );
+    }
 
+    // Convert file to buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Extract text from PDF
+    const data = await (pdfParse as any)(buffer);
+    const text = data.text.toLowerCase();
+
+    // Internship detection
     const internships =
-      lower.includes("intern") ||
-      lower.includes("internship");
+      text.includes("intern") ||
+      text.includes("internship") ||
+      text.includes("trainee");
 
+    // GitHub detection
     const github_present =
-      lower.includes("github.com");
+      text.includes("github");
 
+    // Production project detection
     const production_projects =
-      lower.includes("deploy") ||
-      lower.includes("production") ||
-      lower.includes("live");
+      text.includes("deploy") ||
+      text.includes("production") ||
+      text.includes("live");
 
+    // Metrics detection
     const metrics_present =
-      lower.includes("%") ||
-      lower.includes("users") ||
-      lower.includes("performance");
+      text.includes("%") ||
+      text.includes("improved") ||
+      text.includes("reduced");
 
-    const tech_stack = [];
+    // Tech stack detection
+    const tech_stack: string[] = [];
 
-    if (lower.includes("react")) tech_stack.push("React");
-    if (lower.includes("node")) tech_stack.push("Node");
-    if (lower.includes("aws")) tech_stack.push("AWS");
-    if (lower.includes("docker")) tech_stack.push("Docker");
-    if (lower.includes("python")) tech_stack.push("Python");
+    if (text.includes("react")) tech_stack.push("React");
+    if (text.includes("node")) tech_stack.push("Node");
+    if (text.includes("aws")) tech_stack.push("AWS");
+    if (text.includes("python")) tech_stack.push("Python");
+    if (text.includes("docker")) tech_stack.push("Docker");
+    if (text.includes("java")) tech_stack.push("Java");
 
+    // Project complexity
     const project_complexity =
-      lower.includes("api") || lower.includes("microservice")
+      text.includes("api") ||
+      text.includes("pipeline") ||
+      text.includes("microservice")
         ? "advanced"
         : "basic";
 
@@ -49,6 +71,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
+    console.error(error);
 
     return NextResponse.json(
       {
@@ -57,6 +80,5 @@ export async function POST(req: Request) {
       },
       { status: 500 }
     );
-
   }
 }
