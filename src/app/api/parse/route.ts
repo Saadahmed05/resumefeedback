@@ -2,26 +2,24 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 
-const pdf = require("pdf-parse");
-
 export async function POST(req: Request) {
+
   try {
 
     const formData = await req.formData();
     const file = formData.get("resume") as File | null;
 
     if (!file) {
+
       return NextResponse.json(
         { error: "No resume uploaded" },
         { status: 400 }
       );
+
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    const parsed = await pdf(buffer);
-
-    const text = parsed.text.toLowerCase();
+    // convert file to text
+    const text = (await file.text()).toLowerCase();
 
     const internships =
       text.includes("intern") ||
@@ -47,6 +45,7 @@ export async function POST(req: Request) {
     if (text.includes("python")) tech_stack.push("Python");
     if (text.includes("aws")) tech_stack.push("AWS");
     if (text.includes("docker")) tech_stack.push("Docker");
+    if (text.includes("java")) tech_stack.push("Java");
 
     const project_complexity =
       text.includes("api") ||
@@ -76,4 +75,5 @@ export async function POST(req: Request) {
     );
 
   }
+
 }

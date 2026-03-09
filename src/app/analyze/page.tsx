@@ -1,9 +1,9 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-export const dynamic = "force-dynamic";
 
 export default function AnalyzePage() {
 
@@ -18,39 +18,53 @@ export default function AnalyzePage() {
       return;
     }
 
-    setLoading(true);
+    try {
 
-    const formData = new FormData();
-    formData.append("resume", file);
+      setLoading(true);
 
-    const parseResponse = await fetch("/api/parse", {
-      method: "POST",
-      body: formData
-    });
+      const formData = new FormData();
+      formData.append("resume", file);
 
-    const parsed = await parseResponse.json();
+      const parseResponse = await fetch("/api/parse", {
+        method: "POST",
+        body: formData
+      });
 
-    if (!parseResponse.ok) {
-      alert("Resume parsing failed");
+      if (!parseResponse.ok) {
+        throw new Error("Parsing failed");
+      }
+
+      const parsed = await parseResponse.json();
+
+      const compareResponse = await fetch("/api/compare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(parsed)
+      });
+
+      if (!compareResponse.ok) {
+        throw new Error("Comparison failed");
+      }
+
+      const result = await compareResponse.json();
+
+      const encoded = encodeURIComponent(JSON.stringify(result));
+
+      router.push(`/report?result=${encoded}`);
+
+    } catch (error) {
+
+      console.error(error);
+      alert("Analysis failed. Please try again.");
+
+    } finally {
+
       setLoading(false);
-      return;
+
     }
 
-    const compareResponse = await fetch("/api/compare", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(parsed)
-    });
-
-    const result = await compareResponse.json();
-
-    const encoded = encodeURIComponent(JSON.stringify(result));
-
-    router.push(`/report?result=${encoded}`);
-
-    setLoading(false);
   };
 
   return (
@@ -75,5 +89,7 @@ export default function AnalyzePage() {
       </button>
 
     </div>
+
   );
+
 }
