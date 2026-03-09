@@ -1,97 +1,99 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AnalyzePage() {
   const router = useRouter();
-  const [resumeText, setResumeText] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    const trimmed = resumeText.trim();
-    if (!trimmed) {
-      setError("Please paste resume text before submitting.");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setFile(e.target.files[0]);
+  };
+
+  const analyzeResume = async () => {
+    if (!file) {
+      setError("Please upload a resume.");
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
+    setLoading(true);
+    setError("");
 
     try {
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      // Step 1: Parse resume
       const parseResponse = await fetch("/api/parse", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ resumeText: trimmed }),
+        body: formData,
       });
 
       if (!parseResponse.ok) {
-        const data = await parseResponse.json().catch(() => null);
-        throw new Error(data?.error ?? "Failed to parse resume");
+        throw new Error("Failed to parse resume");
       }
 
-      const parseJson = await parseResponse.json();
+      const parsedResult = await parseResponse.json();
 
+      // Step 2: Compare resume signals
       const compareResponse = await fetch("/api/compare", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(parseJson),
+        body: JSON.stringify(parsedResult),
       });
 
       if (!compareResponse.ok) {
-        const data = await compareResponse.json().catch(() => null);
-        throw new Error(data?.error ?? "Failed to compare resume");
+        throw new Error("Failed to analyze resume");
       }
 
-      const compareJson = await compareResponse.json();
-      const encoded = encodeURIComponent(JSON.stringify(compareJson));
+      const report = await compareResponse.json();
 
-      router.push(`/report?result=${encoded}`);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Unexpected error occurred";
-      setError(message);
+      // Step 3: Redirect to report page
+      router.push(`/report?result=${encodeURIComponent(JSON.stringify(report))}`);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong.");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="max-w-3xl mx-auto py-10 space-y-6">
-      <h1 className="text-2xl font-semibold">Analyze Resume</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label className="block text-sm font-medium">
-          Resume text
-          <textarea
-            className="mt-1 block w-full min-h-[240px] rounded-md border border-gray-300 bg-white p-3 text-sm shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-            rows={15}
-            value={resumeText}
-            onChange={(event) => setResumeText(event.target.value)}
-            placeholder="Paste your resume here..."
-          />
-        </label>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
 
-        {error && (
-          <p className="text-sm text-red-600" role="alert">
-            {error}
-          </p>
-        )}
+      <h1 className="text-3xl font-bold mb-6">
+        Analyze Your SWE Internship Resume
+      </h1>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-60"
-        >
-          {isSubmitting ? "Analyzing..." : "Analyze resume"}
-        </button>
-      </form>
+      <p className="text-gray-600 mb-6 text-center max-w-xl">
+        Upload your resume and we will benchmark it against common SWE
+        internship resume patterns.
+      </p>
+
+      <input
+        type="file"
+        accept=".pdf"
+        onChange={handleFileChange}
+        className="mb-4"
+      />
+
+      <button
+        onClick={analyzeResume}
+        disabled={loading}
+        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+      >
+        {loading ? "Analyzing..." : "Analyze Resume"}
+      </button>
+
+      {error && (
+        <p className="text-red-600 mt-4">{error}</p>
+      )}
     </div>
   );
 }
