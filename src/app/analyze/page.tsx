@@ -28,37 +28,32 @@ export default function AnalyzePage() {
       const formData = new FormData();
       formData.append("resume", file);
 
-      // Step 1: Parse resume
+      // Parse resume
       const parseResponse = await fetch("/api/parse", {
         method: "POST",
         body: formData,
       });
 
-      if (!parseResponse.ok) {
-        throw new Error("Failed to parse resume");
-      }
+      const parsed = await parseResponse.json();
 
-      const parsedResult = await parseResponse.json();
-
-      // Step 2: Compare resume signals
+      // Compare resume
       const compareResponse = await fetch("/api/compare", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(parsedResult),
+        body: JSON.stringify(parsed),
       });
-
-      if (!compareResponse.ok) {
-        throw new Error("Failed to analyze resume");
-      }
 
       const report = await compareResponse.json();
 
-      // Step 3: Redirect to report page
-      router.push(`/report?result=${encodeURIComponent(JSON.stringify(report))}`);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong.");
+      // IMPORTANT: send result to report page
+      const encoded = encodeURIComponent(JSON.stringify(report));
+
+      router.push(`/report?result=${encoded}`);
+
+    } catch (err) {
+      setError("Analysis failed.");
     } finally {
       setLoading(false);
     }
@@ -71,11 +66,6 @@ export default function AnalyzePage() {
         Analyze Your SWE Internship Resume
       </h1>
 
-      <p className="text-gray-600 mb-6 text-center max-w-xl">
-        Upload your resume and we will benchmark it against common SWE
-        internship resume patterns.
-      </p>
-
       <input
         type="file"
         accept=".pdf"
@@ -86,7 +76,7 @@ export default function AnalyzePage() {
       <button
         onClick={analyzeResume}
         disabled={loading}
-        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+        className="bg-blue-600 text-white px-6 py-3 rounded-lg"
       >
         {loading ? "Analyzing..." : "Analyze Resume"}
       </button>
@@ -94,6 +84,7 @@ export default function AnalyzePage() {
       {error && (
         <p className="text-red-600 mt-4">{error}</p>
       )}
+
     </div>
   );
 }
