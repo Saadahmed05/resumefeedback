@@ -1,20 +1,18 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AnalyzePage() {
 
   const router = useRouter();
-  const [file, setFile] = useState<File | null>(null);
+  const [resumeText, setResumeText] = useState("");
   const [loading, setLoading] = useState(false);
 
   const analyzeResume = async () => {
 
-    if (!file) {
-      alert("Please upload a resume");
+    if (!resumeText.trim()) {
+      alert("Please paste your resume text.");
       return;
     }
 
@@ -22,33 +20,17 @@ export default function AnalyzePage() {
 
       setLoading(true);
 
-      const formData = new FormData();
-      formData.append("resume", file);
-
-      const parseResponse = await fetch("/api/parse", {
-        method: "POST",
-        body: formData
-      });
-
-      if (!parseResponse.ok) {
-        throw new Error("Parsing failed");
-      }
-
-      const parsed = await parseResponse.json();
-
-      const compareResponse = await fetch("/api/compare", {
+      const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(parsed)
+        body: JSON.stringify({
+          text: resumeText
+        })
       });
 
-      if (!compareResponse.ok) {
-        throw new Error("Comparison failed");
-      }
-
-      const result = await compareResponse.json();
+      const result = await response.json();
 
       const encoded = encodeURIComponent(JSON.stringify(result));
 
@@ -56,8 +38,7 @@ export default function AnalyzePage() {
 
     } catch (error) {
 
-      console.error(error);
-      alert("Analysis failed. Please try again.");
+      alert("Analysis failed");
 
     } finally {
 
@@ -69,16 +50,21 @@ export default function AnalyzePage() {
 
   return (
 
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+    <div className="min-h-screen flex flex-col items-center justify-center p-10 gap-6">
 
       <h1 className="text-3xl font-bold">
         Resume Analyzer
       </h1>
 
-      <input
-        type="file"
-        accept=".pdf"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
+      <p className="text-gray-500">
+        Paste your resume text below
+      </p>
+
+      <textarea
+        className="w-full max-w-3xl h-80 border p-4 rounded"
+        placeholder="Paste your entire resume here..."
+        value={resumeText}
+        onChange={(e) => setResumeText(e.target.value)}
       />
 
       <button
