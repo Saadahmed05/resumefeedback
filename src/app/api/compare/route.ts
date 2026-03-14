@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const improvements: string[] = [];
 
     // Lower base score
-    let score = 25;
+    let score = 15;
 
     // Internship (most important)
     if (resume.internships) {
