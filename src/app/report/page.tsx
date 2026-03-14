@@ -1,10 +1,9 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function ReportPage() {
+function ReportContent() {
 
   const params = useSearchParams();
   const data = params.get("result");
@@ -86,6 +85,15 @@ export default function ReportPage() {
 
     </div>
 
+  );
+}
+
+export default function ReportPage() {
+
+  return (
+    <Suspense fallback={<div className="p-10">Loading report...</div>}>
+      <ReportContent />
+    </Suspense>
   );
 
 }
