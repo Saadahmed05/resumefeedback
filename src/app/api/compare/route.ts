@@ -11,9 +11,10 @@ export async function POST(req: Request) {
     const gaps: string[] = [];
     const improvements: string[] = [];
 
-    let score = 35; // base score
+    // Lower base score
+    let score = 25;
 
-    // Internship
+    // Internship (most important)
     if (resume.internships) {
       score += 20;
       strengths.push("Internship experience detected.");
@@ -25,15 +26,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // GitHub
+    // GitHub portfolio
     if (resume.github_present) {
       score += 10;
       strengths.push("GitHub portfolio detected.");
     } else {
       gaps.push("No GitHub portfolio detected.");
-      improvements.push(
-        "Add a GitHub profile with active projects."
-      );
+      improvements.push("Add a GitHub profile with active projects.");
     }
 
     // Production projects
@@ -42,12 +41,10 @@ export async function POST(req: Request) {
       strengths.push("Has production or deployed projects.");
     } else {
       gaps.push("Projects appear basic.");
-      improvements.push(
-        "Deploy projects and include live links."
-      );
+      improvements.push("Deploy projects and include live links.");
     }
 
-    // Metrics
+    // Metrics / measurable impact
     if (resume.metrics_present) {
       score += 10;
       strengths.push("Projects include measurable impact.");
@@ -57,10 +54,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Tech stack
-    if (resume.tech_stack && resume.tech_stack.length >= 5) {
+    // Tech stack depth
+    const techCount = resume.tech_stack ? resume.tech_stack.length : 0;
+
+    if (techCount >= 5) {
       score += 10;
-    } else if (resume.tech_stack && resume.tech_stack.length >= 3) {
+    } else if (techCount >= 3) {
       score += 5;
     } else {
       gaps.push("Limited tech stack detected.");
@@ -69,20 +68,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // Experience bonus
-    if (resume.experience_years && resume.experience_years >= 1) {
+    // Project complexity
+    if (resume.project_complexity === "advanced") {
+      score += 10;
+      strengths.push("Complex engineering projects detected.");
+    } else {
+      gaps.push("Projects appear basic.");
+      improvements.push(
+        "Build more complex systems like APIs or SaaS apps."
+      );
+    }
+
+    // Experience bonus (very small)
+    if (resume.experience_years >= 1) {
       score += 5;
     }
 
-    // Cap score so 100 is rare
-    if (score > 92) score = 92;
+    // Hard cap
+    if (score > 90) score = 90;
 
-    // Match level
+    // Match level classification
     let match_level = "Low";
 
-    if (score >= 85) {
+    if (score >= 80) {
       match_level = "High";
-    } else if (score >= 65) {
+    } else if (score >= 60) {
       match_level = "Medium";
     }
 
@@ -102,9 +112,7 @@ export async function POST(req: Request) {
   } catch (error) {
 
     return NextResponse.json(
-      {
-        error: "Comparison failed"
-      },
+      { error: "Comparison failed" },
       { status: 500 }
     );
 
