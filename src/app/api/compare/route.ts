@@ -1,84 +1,90 @@
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  try {
-    const parsed = await req.json();
 
-    let score = 0;
+  try {
+
+    const resume = await req.json();
 
     const strengths: string[] = [];
-    const gaps: string[] = [];
     const likely_rejection_factors: string[] = [];
+    const gaps: string[] = [];
     const improvements: string[] = [];
 
-    if (parsed.production_projects) {
-      score += 15;
-      strengths.push("Has production or deployed projects.");
+    let score = 35; // base score
+
+    // Internship
+    if (resume.internships) {
+      score += 20;
+      strengths.push("Internship experience detected.");
     } else {
-      gaps.push("No deployed project detected.");
+      likely_rejection_factors.push("No internship experience listed.");
+      gaps.push("No internship history.");
       improvements.push(
-        "Deploy one project using AWS, Vercel, or Netlify."
+        "Try internships, freelance work, or open-source contributions."
       );
     }
 
-    if (parsed.metrics_present) {
-      score += 15;
-      strengths.push("Projects include measurable impact.");
-    } else {
-      gaps.push("Projects lack measurable metrics.");
-      improvements.push(
-        "Add metrics like performance improvements or user numbers."
-      );
-    }
-
-    if (parsed.github_present) {
-      score += 15;
+    // GitHub
+    if (resume.github_present) {
+      score += 10;
       strengths.push("GitHub portfolio detected.");
     } else {
-      gaps.push("GitHub portfolio missing.");
+      gaps.push("No GitHub portfolio detected.");
       improvements.push(
-        "Add a GitHub profile link with your projects."
+        "Add a GitHub profile with active projects."
       );
     }
 
-    if (parsed.internships) {
-      score += 20;
-      strengths.push("Has internship or real work experience.");
-    } else {
-      likely_rejection_factors.push(
-        "No internship experience listed."
-      );
-      improvements.push(
-        "Try internships, freelance projects, or open source."
-      );
-    }
-
-    if (parsed.tech_stack && parsed.tech_stack.length >= 3) {
-      score += 15;
-      strengths.push("Strong technology stack detected.");
-    } else {
-      gaps.push("Limited tech stack detected.");
-      improvements.push(
-        "Expand tech stack with backend, cloud, or databases."
-      );
-    }
-
-    if (parsed.project_complexity === "advanced") {
-      score += 20;
-      strengths.push("Projects show advanced complexity.");
+    // Production projects
+    if (resume.production_projects) {
+      score += 10;
+      strengths.push("Has production or deployed projects.");
     } else {
       gaps.push("Projects appear basic.");
       improvements.push(
-        "Build more complex systems like APIs or SaaS apps."
+        "Deploy projects and include live links."
       );
     }
 
-    if (score > 100) score = 100;
+    // Metrics
+    if (resume.metrics_present) {
+      score += 10;
+      strengths.push("Projects include measurable impact.");
+    } else {
+      improvements.push(
+        "Add measurable impact (users, performance improvement, etc)."
+      );
+    }
 
+    // Tech stack
+    if (resume.tech_stack && resume.tech_stack.length >= 5) {
+      score += 10;
+    } else if (resume.tech_stack && resume.tech_stack.length >= 3) {
+      score += 5;
+    } else {
+      gaps.push("Limited tech stack detected.");
+      improvements.push(
+        "Expand tech stack with backend, databases, or cloud."
+      );
+    }
+
+    // Experience bonus
+    if (resume.experience_years && resume.experience_years >= 1) {
+      score += 5;
+    }
+
+    // Cap score so 100 is rare
+    if (score > 92) score = 92;
+
+    // Match level
     let match_level = "Low";
 
-    if (score >= 80) match_level = "High";
-    else if (score >= 60) match_level = "Medium";
+    if (score >= 85) {
+      match_level = "High";
+    } else if (score >= 65) {
+      match_level = "Medium";
+    }
 
     const improved_bullet_example =
       "Deployed a full-stack application using AWS + Docker serving 500+ users.";
@@ -87,15 +93,21 @@ export async function POST(req: Request) {
       score,
       match_level,
       strengths,
-      gaps,
       likely_rejection_factors,
+      gaps,
       improvements,
-      improved_bullet_example,
+      improved_bullet_example
     });
+
   } catch (error) {
+
     return NextResponse.json(
-      { error: "Comparison failed", details: String(error) },
+      {
+        error: "Comparison failed"
+      },
       { status: 500 }
     );
+
   }
+
 }

@@ -29,10 +29,16 @@ function ReportContent() {
       </h1>
 
       <div className="mb-6">
-        <h2 className="text-xl font-semibold">Resume Score</h2>
-        <p className="text-4xl font-bold text-blue-600">
-          {report.score}/100
-        </p>
+      <h2 className="text-xl font-semibold">Resume Score</h2>
+
+<p className="text-4xl font-bold text-blue-600">
+  {report.score}/100
+</p>
+
+<p className="text-sm text-gray-500 mt-2">
+  Most SWE internship resumes score between 60–80.  
+  Top resumes usually score 85+.
+</p>
       </div>
 
       <div className="mb-6">
