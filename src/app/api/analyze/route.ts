@@ -71,10 +71,10 @@ export async function POST(req: Request) {
 
     const strong_tech_stack = techCount >= 3;
 
-    let score = 40;
+    let score = 20;
 
-    if (internships) score += 25;
-    if (github_present) score += 15;
+    if (internships) score += 20;
+    if (github_present) score += 10;
     if (production_projects) score += 10;
     if (metrics_present) score += 10;
     if (strong_tech_stack) score += 10;
