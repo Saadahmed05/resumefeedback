@@ -1,105 +1,60 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-function ReportContent() {
+export default function AnalyzePage() {
+  const router = useRouter();
 
-  const params = useSearchParams();
-  const data = params.get("result");
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  if (!data) {
-    return <div className="p-10">No Report Data Found</div>;
-  }
+  const analyze = async () => {
+    if (!file) {
+      alert("Please upload a PDF");
+      return;
+    }
 
-  const report = JSON.parse(decodeURIComponent(data));
+    setLoading(true);
 
-  const getColor = () => {
-    if (report.match_level === "High") return "text-green-600";
-    if (report.match_level === "Medium") return "text-yellow-600";
-    return "text-red-600";
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await res.json();
+
+    if (result.error) {
+      alert(result.error);
+      setLoading(false);
+      return;
+    }
+
+    const encoded = encodeURIComponent(JSON.stringify(result));
+    router.push(`/report?data=${encoded}`);
+
+    setLoading(false);
   };
 
   return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-10">
+      <h1 className="text-3xl font-bold">Resume Analyzer</h1>
 
-    <div className="min-h-screen p-10">
+      <input
+        type="file"
+        accept=".pdf"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
+      />
 
-      <h1 className="text-3xl font-bold mb-6">
-        Resume Benchmark Report
-      </h1>
-
-      <div className="mb-6">
-      <h2 className="text-xl font-semibold">Resume Score</h2>
-
-<p className="text-4xl font-bold text-blue-600">
-  {report.score}/100
-</p>
-
-<p className="text-sm text-gray-500 mt-2">
-  Most SWE internship resumes score between 60–80.  
-  Top resumes usually score 85+.
-</p>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Match Level</h2>
-        <p className={`text-2xl font-bold ${getColor()}`}>
-          {report.match_level}
-        </p>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Strengths</h2>
-        <ul className="list-disc pl-6 text-green-700">
-          {report.strengths.map((s: string, i: number) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Likely Screening Blockers</h2>
-        <ul className="list-disc pl-6 text-red-700">
-          {report.likely_rejection_factors.map((s: string, i: number) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Gaps</h2>
-        <ul className="list-disc pl-6">
-          {report.gaps.map((s: string, i: number) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Action Plan</h2>
-        <ul className="list-disc pl-6">
-          {report.improvements.map((s: string, i: number) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-8 p-4 border rounded">
-        <h2 className="font-semibold mb-2">Example Resume Upgrade</h2>
-        <p>{report.improved_bullet_example}</p>
-      </div>
-
+      <button
+        onClick={analyze}
+        className="bg-black text-white px-6 py-3 rounded"
+      >
+        {loading ? "Analyzing..." : "Analyze Resume"}
+      </button>
     </div>
-
   );
-}
-
-export default function ReportPage() {
-
-  return (
-    <Suspense fallback={<div className="p-10">Loading report...</div>}>
-      <ReportContent />
-    </Suspense>
-  );
-
 }
