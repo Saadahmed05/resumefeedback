@@ -1,51 +1,26 @@
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-const pdfParse = require("pdf-parse");
 
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
+    const body = await req.json();
+    const text = (body.text || "").toLowerCase();
 
-    if (!file) {
+    if (!text.trim()) {
       return NextResponse.json(
-        { error: "No file uploaded" },
+        { error: "No resume text provided" },
         { status: 400 }
-      );
-    }
-
-    // 🚫 Prevent large file crashes
-    if (file.size > 2 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "File too large. Use a PDF under 2MB." },
-        { status: 400 }
-      );
-    }
-
-    let text = "";
-
-    try {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const data = await pdfParse(buffer);
-      text = data.text.toLowerCase();
-    } catch (err) {
-      console.error(err);
-      return NextResponse.json(
-        { error: "Failed to parse PDF. Try another file." },
-        { status: 500 }
       );
     }
 
     // -------- SIGNALS --------
-    const internships =
-      text.includes("intern") || text.includes("internship");
-
-    const github_present =
-      text.includes("github.com") || text.includes("github");
+    const internships = text.includes("intern");
+    const github_present = text.includes("github");
 
     const metrics_present =
-      /\d+%|\d+\+|\d+ users|\d+ms|\d+ seconds/.test(text);
+      /\d+%|\d+\+|\d+ users/.test(text);
 
     const production_projects =
       text.includes("deploy") ||
@@ -54,17 +29,12 @@ export async function POST(req: Request) {
 
     const oss_present =
       text.includes("open source") ||
-      text.includes("oss") ||
       text.includes("contributed") ||
       text.includes("pull request");
 
-    const strong_oss =
-      text.includes("merged") ||
-      text.includes("maintainer");
-
     const tech_keywords = [
       "python","java","c++","javascript","react",
-      "node","aws","docker","kubernetes","mongodb","postgres"
+      "node","aws","docker","mongodb","postgres"
     ];
 
     const tech_stack = tech_keywords.filter((t) =>
@@ -74,23 +44,27 @@ export async function POST(req: Request) {
     const tech_stack_count = tech_stack.length;
 
     // -------- SCORE --------
-    let score = 25;
+    let score = 30;
 
     if (internships) score += 20;
     else if (oss_present) score += 15;
 
     if (github_present) score += 10;
-    if (metrics_present) score += 10;
+    if (metrics_present) score += 12;
     if (production_projects) score += 10;
 
-    if (strong_oss) score += 5;
+    if (tech_stack_count >= 6) score += 18;
+    else if (tech_stack_count >= 4) score += 12;
+    else if (tech_stack_count >= 2) score += 6;
 
-    if (tech_stack_count >= 5) score += 15;
-    else if (tech_stack_count >= 3) score += 8;
+    // penalties
+    if (!metrics_present) score -= 5;
+    if (!production_projects) score -= 5;
 
-    if (score > 90) score = 90;
+    if (score > 92) score = 92;
+    if (score < 35) score = 35;
 
-    // -------- DYNAMIC OUTPUT --------
+    // -------- OUTPUT --------
     const strengths: string[] = [];
     const gaps: string[] = [];
     const improvements: string[] = [];
@@ -111,42 +85,33 @@ export async function POST(req: Request) {
       strengths.push("Deployed projects detected");
 
     if (!internships && !oss_present) {
-      gaps.push("No internship or open-source experience");
+      gaps.push("No real-world experience (internship or OSS)");
       improvements.push("Add internships or OSS contributions");
     }
 
     if (!metrics_present) {
-      gaps.push("No measurable project impact");
-      improvements.push("Add numbers like % improvement or users");
+      gaps.push("Projects lack measurable impact");
+      improvements.push("Add numbers (%, users, performance)");
     }
 
     if (!production_projects) {
       gaps.push("Projects are not deployed");
-      improvements.push("Deploy projects and include links");
+      improvements.push("Deploy projects and add live links");
     }
 
     if (tech_stack_count < 4) {
-      gaps.push("Tech stack below average");
-      improvements.push("Add backend, cloud, or DB skills");
+      gaps.push("Tech stack below strong SWE level");
+      improvements.push("Add backend, cloud, databases");
     }
 
-    if (!github_present) {
-      gaps.push("No GitHub portfolio");
-      improvements.push("Add GitHub projects");
-    }
-
-    // -------- SUMMARY --------
     let summary = "";
 
-    if (score >= 80) {
-      summary =
-        "Strong resume. You're close to top-tier SWE internship level.";
-    } else if (score >= 65) {
-      summary =
-        "Decent resume but missing key signals recruiters expect.";
+    if (score >= 85) {
+      summary = "Strong SWE resume. Very close to top-tier candidates.";
+    } else if (score >= 70) {
+      summary = "Good resume but missing key signals.";
     } else {
-      summary =
-        "Your resume lacks multiple key signals recruiters look for.";
+      summary = "Resume needs improvement for screening.";
     }
 
     return NextResponse.json({
@@ -154,15 +119,12 @@ export async function POST(req: Request) {
       summary,
       strengths,
       gaps,
-      improvements,
-      comparison: {
-        accepted_avg_score: 82,
-        difference: 82 - score
-      }
+      improvements
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("ERROR:", err);
+
     return NextResponse.json(
       { error: "Analysis failed" },
       { status: 500 }
