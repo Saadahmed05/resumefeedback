@@ -143,14 +143,16 @@ export async function POST(req: Request) {
 
     // 🔥 IMPORTANT FIX: even strong resumes get improvement
     if (gaps.length === 0) {
+      gaps.push("No major weaknesses, but lacks standout differentiation");
+    
       improvements.push(
         "Improve bullet points with stronger impact and clarity → +5 to +10 points"
       );
-
+    
       improvements.push(
         "Add 1 standout project (SaaS / system design) → +8 to +12 points"
       );
-
+    
       scoreBoost += 10;
     }
 
