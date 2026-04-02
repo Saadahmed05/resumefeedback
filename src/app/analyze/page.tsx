@@ -34,21 +34,24 @@ export default function Page() {
     const res = await fetch("/api/create-order", {
       method: "POST",
     });
-
+  
     const order = await res.json();
-
+  
     const options = {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       amount: order.amount,
       currency: "INR",
-      name: "Resume Analyzer",
+      name: "ShortlistAI",
       description: "Unlock full report",
       order_id: order.id,
       handler: function () {
         setUnlocked(true);
       },
+      theme: {
+        color: "#000",
+      },
     };
-
+  
     const rzp = new (window as any).Razorpay(options);
     rzp.open();
   };
