@@ -33,6 +33,12 @@ export default function AnalyzePage() {
     setLoading(false);
   };
 
+  const getColor = (score: number) => {
+    if (score >= 80) return "bg-green-500";
+    if (score >= 60) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
 
@@ -42,10 +48,10 @@ export default function AnalyzePage() {
       </h1>
 
       <p className="text-gray-500 mb-6">
-        Paste your resume and get instant feedback
+        Get instant feedback like a recruiter
       </p>
 
-      {/* TEXTAREA */}
+      {/* INPUT */}
       <textarea
         placeholder="Paste your resume here..."
         value={text}
@@ -65,41 +71,68 @@ export default function AnalyzePage() {
       {result && (
         <div className="mt-8 w-full max-w-2xl bg-white p-6 rounded-lg shadow">
 
+          {/* SCORE */}
           <h2 className="text-2xl font-bold mb-2">
             Score: {result.score}/100
           </h2>
 
-          <p className="text-gray-600 mb-4">
+          {/* PROGRESS BAR */}
+          <div className="w-full bg-gray-200 h-4 rounded-full mb-4">
+            <div
+              className={`${getColor(result.score)} h-4 rounded-full`}
+              style={{ width: `${result.score}%` }}
+            />
+          </div>
+
+          <p className="text-gray-600 mb-6">
             {result.summary}
           </p>
 
           {/* STRENGTHS */}
           <div className="mb-4">
-            <h3 className="font-semibold">✅ Strengths</h3>
+            <h3 className="font-semibold text-green-600 mb-1">
+              ✅ Strengths
+            </h3>
             <ul className="list-disc ml-5 text-sm text-gray-700">
-              {result.strengths.map((s: string, i: number) => (
-                <li key={i}>{s}</li>
-              ))}
+              {result.strengths.length > 0 ? (
+                result.strengths.map((s: string, i: number) => (
+                  <li key={i}>{s}</li>
+                ))
+              ) : (
+                <li>No strong signals detected</li>
+              )}
             </ul>
           </div>
 
           {/* GAPS */}
           <div className="mb-4">
-            <h3 className="font-semibold">⚠️ Gaps</h3>
+            <h3 className="font-semibold text-red-500 mb-1">
+              ⚠️ Gaps
+            </h3>
             <ul className="list-disc ml-5 text-sm text-gray-700">
-              {result.gaps.map((g: string, i: number) => (
-                <li key={i}>{g}</li>
-              ))}
+              {result.gaps.length > 0 ? (
+                result.gaps.map((g: string, i: number) => (
+                  <li key={i}>{g}</li>
+                ))
+              ) : (
+                <li>No major gaps detected</li>
+              )}
             </ul>
           </div>
 
           {/* IMPROVEMENTS */}
           <div>
-            <h3 className="font-semibold">🚀 Improvements</h3>
+            <h3 className="font-semibold text-blue-600 mb-1">
+              🚀 Improvements
+            </h3>
             <ul className="list-disc ml-5 text-sm text-gray-700">
-              {result.improvements.map((imp: string, i: number) => (
-                <li key={i}>{imp}</li>
-              ))}
+              {result.improvements.length > 0 ? (
+                result.improvements.map((imp: string, i: number) => (
+                  <li key={i}>{imp}</li>
+                ))
+              ) : (
+                <li>Your resume is already strong</li>
+              )}
             </ul>
           </div>
 
