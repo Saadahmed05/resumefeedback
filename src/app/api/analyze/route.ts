@@ -16,12 +16,16 @@ export async function POST(req: Request) {
     }
 
     // ======================
-    // DETECTION LOGIC
+    // DETECTION
     // ======================
 
     const internships =
       text.includes("intern") ||
-      text.includes("internship");
+      text.includes("internship")
+      text.includes("EXPERIENCE");
+      text.includes("experience");
+      text.includes("Experience");
+      text.includes("Intern");
 
     const github_present =
       text.includes("github");
@@ -39,17 +43,8 @@ export async function POST(req: Request) {
       text.includes("contributed");
 
     const tech_keywords = [
-      "react",
-      "node",
-      "express",
-      "mongodb",
-      "sql",
-      "aws",
-      "docker",
-      "kubernetes",
-      "python",
-      "java",
-      "typescript",
+      "react","node","express","mongodb","sql",
+      "aws","docker","kubernetes","python","java","typescript"
     ];
 
     let tech_stack_count = 0;
@@ -58,20 +53,32 @@ export async function POST(req: Request) {
     });
 
     // ======================
-    // SCORE CALCULATION
+    // STRICT SCORING
     // ======================
 
-    let score = 20;
+    let score = 20; // 🔥 lower base
 
-    if (internships) score += 20;
-    if (oss_present) score += 15;
-    if (github_present) score += 10;
-    if (metrics_present) score += 10;
+    // Experience
+    if (internships) score += 18;
+    else if (oss_present) score += 12;
+
+    // Core signals
+    if (github_present) score += 8;
+    if (metrics_present) score += 12;
     if (production_projects) score += 10;
 
-    if (tech_stack_count >= 4) score += 10;
+    // Tech depth
+    if (tech_stack_count >= 6) score += 15;
+    else if (tech_stack_count >= 4) score += 10;
+    else if (tech_stack_count >= 2) score += 5;
 
-    if (score > 95) score = 95;
+    // Penalties (IMPORTANT)
+    if (!metrics_present) score -= 5;
+    if (!production_projects) score -= 5;
+
+    // Clamp realistic range
+    if (score > 88) score = 88;
+    if (score < 30) score = 30;
 
     // ======================
     // STRENGTHS
@@ -105,70 +112,56 @@ export async function POST(req: Request) {
     const improvements: string[] = [];
     let scoreBoost = 0;
 
-    // EXPERIENCE
     if (!internships && !oss_present) {
-      gaps.push(
-        "No real-world experience (internship or open-source) detected"
-      );
-
+      gaps.push("No real-world experience detected");
       improvements.push(
-        "Add internship or open-source experience → +15% score boost"
+        "Add internship or open-source work → +15% score boost"
       );
-
       scoreBoost += 15;
     }
 
-    // METRICS
     if (!metrics_present) {
-      gaps.push("Projects lack measurable impact");
-
+      gaps.push("No measurable impact in projects");
       improvements.push(
-        "Add metrics (%, users, performance improvements) → +10% score boost"
+        "Add metrics (%, users, performance gains) → +10% boost"
       );
-
       scoreBoost += 10;
     }
 
-    // DEPLOYMENT
     if (!production_projects) {
-      gaps.push("Projects are not deployed/live");
-
+      gaps.push("Projects are not deployed");
       improvements.push(
-        "Deploy projects (Vercel, AWS, etc.) → +10% score boost"
+        "Deploy projects (Vercel, AWS) → +10% boost"
       );
-
       scoreBoost += 10;
     }
 
-    // TECH STACK
     if (tech_stack_count < 4) {
-      gaps.push("Tech stack is not strong enough");
-
+      gaps.push("Tech stack is below strong SWE level");
       improvements.push(
-        "Add backend + database + cloud skills → +12% score boost"
+        "Add backend + cloud + DB skills → +12% boost"
       );
-
       scoreBoost += 12;
     }
 
     // ======================
-    // SUMMARY
+    // SUMMARY (MORE REALISTIC)
     // ======================
 
     let summary = "";
 
-    if (score >= 85) {
+    if (score >= 80) {
       summary =
-        "Strong SWE resume. Very close to top-tier candidates.";
-    } else if (score >= 70) {
+        "Strong resume. You’re close to top-tier SWE candidates.";
+    } else if (score >= 65) {
       summary =
-        "Good resume with solid fundamentals, but needs improvements to stand out.";
+        "Decent resume, but missing key signals recruiters expect.";
     } else if (score >= 50) {
       summary =
-        "Average resume. Several key improvements needed for shortlisting.";
+        "Average resume. Needs improvements to pass screening.";
     } else {
       summary =
-        "Weak resume. Significant improvements required to get shortlisted.";
+        "Weak resume. Likely to get filtered out in early stages.";
     }
 
     // ======================
