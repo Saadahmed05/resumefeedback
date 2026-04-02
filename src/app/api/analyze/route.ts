@@ -21,21 +21,15 @@ export async function POST(req: Request) {
 
     const internships =
       text.includes("intern") ||
-      text.includes("internship")
-      text.includes("EXPERIENCE");
-      text.includes("experience");
-      text.includes("Experience");
-      text.includes("Intern");
+      text.includes("internship");
 
-    const github_present =
-      text.includes("github");
+    const github_present = text.includes("github");
 
     const metrics_present =
       /\d+%|\d+\+|\d+ users|\d+x/.test(text);
 
     const production_projects =
       text.includes("deploy") ||
-      text.includes("production") ||
       text.includes("live");
 
     const oss_present =
@@ -53,30 +47,25 @@ export async function POST(req: Request) {
     });
 
     // ======================
-    // STRICT SCORING
+    // SCORING
     // ======================
 
-    let score = 20; // 🔥 lower base
+    let score = 25;
 
-    // Experience
     if (internships) score += 18;
     else if (oss_present) score += 12;
 
-    // Core signals
     if (github_present) score += 8;
     if (metrics_present) score += 12;
     if (production_projects) score += 10;
 
-    // Tech depth
     if (tech_stack_count >= 6) score += 15;
     else if (tech_stack_count >= 4) score += 10;
     else if (tech_stack_count >= 2) score += 5;
 
-    // Penalties (IMPORTANT)
     if (!metrics_present) score -= 5;
     if (!production_projects) score -= 5;
 
-    // Clamp realistic range
     if (score > 88) score = 88;
     if (score < 30) score = 30;
 
@@ -87,22 +76,22 @@ export async function POST(req: Request) {
     const strengths: string[] = [];
 
     if (internships)
-      strengths.push("Internship experience detected");
+      strengths.push("You have real internship experience");
 
     if (oss_present)
-      strengths.push("Open-source contributions detected");
+      strengths.push("You have open-source contributions");
 
     if (github_present)
-      strengths.push("GitHub portfolio detected");
+      strengths.push("You have a visible GitHub profile");
 
     if (metrics_present)
-      strengths.push("Projects include measurable impact");
+      strengths.push("Your projects show measurable impact");
 
     if (production_projects)
-      strengths.push("Deployed projects detected");
+      strengths.push("You have deployed/live projects");
 
     if (tech_stack_count >= 4)
-      strengths.push("Strong technical stack");
+      strengths.push("Your tech stack is solid");
 
     // ======================
     // GAPS + IMPROVEMENTS
@@ -113,55 +102,76 @@ export async function POST(req: Request) {
     let scoreBoost = 0;
 
     if (!internships && !oss_present) {
-      gaps.push("No real-world experience detected");
+      gaps.push("No real-world experience (internship or open-source)");
+
       improvements.push(
-        "Add internship or open-source work → +15% score boost"
+        "Add at least 1 internship or open-source contribution → +15 points"
       );
+
       scoreBoost += 15;
     }
 
     if (!metrics_present) {
-      gaps.push("No measurable impact in projects");
+      gaps.push("Projects don’t show measurable results");
+
       improvements.push(
-        "Add metrics (%, users, performance gains) → +10% boost"
+        "Add numbers (%, users, performance gains) → +10 points"
       );
+
       scoreBoost += 10;
     }
 
     if (!production_projects) {
       gaps.push("Projects are not deployed");
+
       improvements.push(
-        "Deploy projects (Vercel, AWS) → +10% boost"
+        "Deploy your projects (Vercel, AWS) → +10 points"
       );
+
       scoreBoost += 10;
     }
 
     if (tech_stack_count < 4) {
-      gaps.push("Tech stack is below strong SWE level");
+      gaps.push("Tech stack is not strong enough");
+
       improvements.push(
-        "Add backend + cloud + DB skills → +12% boost"
+        "Add backend + database + cloud skills → +12 points"
       );
+
       scoreBoost += 12;
     }
 
+    // 🔥 IMPORTANT FIX: even strong resumes get improvement
+    if (gaps.length === 0) {
+      improvements.push(
+        "Improve bullet points with stronger impact and clarity → +5 to +10 points"
+      );
+
+      improvements.push(
+        "Add 1 standout project (SaaS / system design) → +8 to +12 points"
+      );
+
+      scoreBoost += 10;
+    }
+
     // ======================
-    // SUMMARY (MORE REALISTIC)
+    // SUMMARY (FIXED)
     // ======================
 
     let summary = "";
 
     if (score >= 80) {
       summary =
-        "Strong resume. You’re close to top-tier SWE candidates.";
+        "Strong resume. You are close to top-tier candidates, but small improvements can push you higher.";
     } else if (score >= 65) {
       summary =
-        "Decent resume, but missing key signals recruiters expect.";
+        "Good resume, but missing a few key signals recruiters look for.";
     } else if (score >= 50) {
       summary =
-        "Average resume. Needs improvements to pass screening.";
+        "Average resume. Needs improvements to increase shortlist chances.";
     } else {
       summary =
-        "Weak resume. Likely to get filtered out in early stages.";
+        "Weak resume. Likely to be rejected in initial screening.";
     }
 
     // ======================
