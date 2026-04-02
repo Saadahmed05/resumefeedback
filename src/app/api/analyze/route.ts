@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     // SCORE CALCULATION
     // ======================
 
-    let score = 40;
+    let score = 20;
 
     if (internships) score += 20;
     if (oss_present) score += 15;
